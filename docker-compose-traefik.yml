@@ -1,0 +1,40 @@
+version: '2.0'
+
+services:
+  web:
+    build:
+      context: docker/php81/apache
+    environment:
+      XDEBUG_CONFIG: remote_host=host.docker.internal remote_enable=1 remote_autostart=1
+    volumes:
+      - ./:/var/www/html
+      - ./docker/php81/php/php.ini:/usr/local/etc/php/php.ini
+    networks:
+      - dcat-adm-tpl-network
+      - traefik-network
+    env_file:
+      - docker/php81/compose-env/.env
+    depends_on:
+      - database
+    labels:
+      - "traefik.docker.network=traefik-network"
+      # 新增一個 http 的
+      - "traefik.http.routers.laravel-http.rule=Host(`${TRAEFIK_DOMAIN_HTTP}`)"
+
+  database:
+    image: mysql:5.7
+    volumes:
+      - ./docker/php81/mysql-data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    env_file:
+      - docker/php81/compose-env/.env
+    networks:
+      - dcat-adm-tpl-network
+
+
+networks:
+  dcat-adm-tpl-network:
+    driver: bridge
+  traefik-network:
+    external: true
